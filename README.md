@@ -1,17 +1,17 @@
 # Aide Moi Backend
 
-A modern Node.js backend API built with Fastify framework and TypeORM for database management.
+A modern Node.js backend API built with Fastify framework and TypeORM with PostgreSQL database.
 
 ## Features
 
 - 🚀 **Fast & Lightweight**: Built with Fastify for high performance
-- 🗄️ **Database Integration**: TypeORM with support for PostgreSQL, MySQL, and SQLite
+- 🗄️ **PostgreSQL Database**: TypeORM with PostgreSQL (SQLite and MySQL also supported)
 - 📚 **API Documentation**: Auto-generated Swagger/OpenAPI docs
 - 🔒 **Security**: Helmet for security headers, CORS, and rate limiting
 - 🧪 **Testing**: Jest testing framework with database integration
 - 📝 **Code Quality**: ESLint and Prettier for consistent code style
 - 🔄 **Hot Reload**: Nodemon for development
-- 🐳 **Docker Ready**: Includes Dockerfile for containerization
+- 🐳 **Docker Ready**: Includes Docker Compose with PostgreSQL
 - 📊 **Health Checks**: Built-in health monitoring endpoints
 - 🎯 **Environment Config**: Dotenv for environment management
 - 🔄 **Database Migrations**: TypeORM migration support
@@ -22,7 +22,7 @@ A modern Node.js backend API built with Fastify framework and TypeORM for databa
 
 - Node.js 18+ 
 - npm or yarn
-- Database (PostgreSQL, MySQL, or SQLite for development)
+- Docker and Docker Compose (for database)
 
 ### Installation
 
@@ -42,27 +42,9 @@ npm install
 cp .env.example .env
 ```
 
-4. Configure your database in `.env` file:
+4. Start PostgreSQL database:
 ```bash
-# For SQLite (default - good for development)
-DB_TYPE=sqlite
-DB_SQLITE_PATH=./database.sqlite
-
-# For PostgreSQL
-# DB_TYPE=postgres
-# DB_HOST=localhost
-# DB_PORT=5432
-# DB_USERNAME=postgres
-# DB_PASSWORD=password
-# DB_DATABASE=aide_moi_db
-
-# For MySQL
-# DB_TYPE=mysql
-# DB_HOST=localhost
-# DB_PORT=3306
-# DB_USERNAME=root
-# DB_PASSWORD=password
-# DB_DATABASE=aide_moi_db
+npm run db:start
 ```
 
 5. Start the development server:
@@ -84,13 +66,31 @@ The server will start on `http://localhost:3000` and automatically create the da
 - `npm run migration:generate <name>` - Generate new migration
 - `npm run migration:run` - Run pending migrations
 - `npm run migration:revert` - Revert last migration
+- `npm run db:start` - Start PostgreSQL database (Docker)
+- `npm run db:stop` - Stop PostgreSQL database
+- `npm run db:logs` - View database logs
 
 ## Database Configuration
 
+### PostgreSQL (Default)
+
+The template is configured to use PostgreSQL by default. You can start a PostgreSQL instance using Docker:
+
+```bash
+# Start PostgreSQL database
+npm run db:start
+
+# View database logs
+npm run db:logs
+
+# Stop database when done
+npm run db:stop
+```
+
 ### Supported Databases
 
-- **SQLite** (default for development)
-- **PostgreSQL** (recommended for production)
+- **PostgreSQL** (default and recommended)
+- **SQLite** (for simple development)
 - **MySQL/MariaDB**
 
 ### Environment Variables
@@ -100,11 +100,11 @@ The server will start on `http://localhost:3000` and automatically create the da
 | `NODE_ENV` | Environment (development/production) | development |
 | `PORT` | Server port | 3000 |
 | `HOST` | Server host | 0.0.0.0 |
-| `DB_TYPE` | Database type (sqlite/postgres/mysql) | sqlite |
+| `DB_TYPE` | Database type (postgres/sqlite/mysql) | postgres |
 | `DB_HOST` | Database host | localhost |
 | `DB_PORT` | Database port | 5432 |
-| `DB_USERNAME` | Database username | - |
-| `DB_PASSWORD` | Database password | - |
+| `DB_USERNAME` | Database username | postgres |
+| `DB_PASSWORD` | Database password | password |
 | `DB_DATABASE` | Database name | aide_moi_db |
 | `DB_SQLITE_PATH` | SQLite file path | ./database.sqlite |
 | `DB_SYNCHRONIZE` | Auto-sync database schema | true |

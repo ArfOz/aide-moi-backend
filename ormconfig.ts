@@ -1,10 +1,9 @@
-const { DataSource } = require('typeorm');
-const User = require('../entities/User');
+import { DataSource } from 'typeorm';
 
-const AppDataSource = new DataSource({
-  type: process.env.DB_TYPE || 'postgres',
+const config = {
+  type: (process.env.DB_TYPE as any) || 'postgres',
   host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT) || 5432,
+  port: parseInt(process.env.DB_PORT || '5432'),
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE || 'aide_moi_db',
@@ -27,9 +26,14 @@ const AppDataSource = new DataSource({
 
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
   logging: process.env.DB_LOGGING === 'true',
-  entities: [User],
-  migrations: ['src/migrations/*.js'],
-  subscribers: ['src/subscribers/*.js']
-});
+  entities: ['src/entities/*.ts'],
+  migrations: ['src/migrations/*.ts'],
+  subscribers: ['src/subscribers/*.ts'],
+  cli: {
+    entitiesDir: 'src/entities',
+    migrationsDir: 'src/migrations',
+    subscribersDir: 'src/subscribers'
+  }
+};
 
-module.exports = AppDataSource;
+export default config;
