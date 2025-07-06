@@ -6,6 +6,7 @@ import rateLimitPlugin from './plugins/rateLimit';
 import swaggerPlugin from './plugins/swagger';
 import healthRoutes from './routes/health';
 import apiRoutes from './routes/api';
+import userRoutes from './routes/users';
 
 /**
  * Create and configure Fastify instance
@@ -38,6 +39,7 @@ function build(opts: FastifyServerOptions = {}): FastifyInstance {
   // Register routes
   app.register(healthRoutes, { prefix: '/health' });
   app.register(apiRoutes, { prefix: '/api/v1' });
+  app.register(userRoutes, { prefix: '/api/user' });
 
   // Global error handler
   app.setErrorHandler(async (error, request, reply) => {
