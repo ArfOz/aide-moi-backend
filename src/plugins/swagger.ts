@@ -18,7 +18,8 @@ async function swaggerPlugin(
       produces: ['application/json'],
       tags: [
         { name: 'health', description: 'Health check endpoints' },
-        { name: 'users', description: 'User related endpoints' }
+        { name: 'users', description: 'User related endpoints' },
+        { name: 'companies', description: 'Company related endpoints' }
       ]
     }
   });

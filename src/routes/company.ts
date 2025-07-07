@@ -1,113 +1,315 @@
 import {
   FastifyInstance,
   FastifyPluginOptions,
-  FastifyReply,
-  FastifyRequest
+  FastifyRequest,
+  FastifyReply
 } from 'fastify';
-import fastifyPlugin from 'fastify-plugin';
-import { v4 as uuidv4 } from 'uuid';
+import { CompanyService } from '../services/CompanyService';
 
-interface Company {
-  id: string;
+interface CreateCompanyBody {
   name: string;
-  address?: string;
-  email?: string;
+  email: string;
+  description?: string;
+  website?: string;
   phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  postalCode?: string;
+  status?: string;
+  employeeCount?: number;
 }
 
-// In-memory store for demo purposes
-const companies: Record<string, Company> = {};
+interface CompanyParams {
+  id: string;
+}
 
 async function companyRoutes(
   fastify: FastifyInstance,
-  opts: FastifyPluginOptions
+  _options: FastifyPluginOptions
 ) {
-  // List all companies
-  fastify.get('/', async (_, reply: FastifyReply) => {
-    return reply.status(200).send(Object.values(companies));
-  });
-
-  // Get company by ID
+  // Initialize CompanyService with database connection
+  const companyService = new CompanyService((fastify as any).db);
+  // Get all companies
   fastify.get(
-    '/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
-      const { id } = request.params;
-      const company = companies[id];
-      if (!company) {
-        return reply.status(404).send({ message: 'Company not found' });
-      }
-      return reply.status(200).send(company);
-    }
-  );
-
-  // Create a new company
-  fastify.post(
     '/',
     {
       schema: {
-        body: {
-          type: 'object',
-          required: ['name'],
-          properties: {
-            name: { type: 'string' },
-            address: { type: 'string' },
-            email: { type: 'string', format: 'email' },
-            phone: { type: 'string' }
+        tags: ['companies'],
+        summary: 'Get all companies',
+        description: 'Retrieve a list of all companies',
+        response: {
+          200: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'integer' },
+                name: { type: 'string' },
+                email: { type: 'string', format: 'email' },
+                description: { type: 'string' },
+                website: { type: 'string' },
+                phone: { type: 'string' },
+                address: { type: 'string' },
+                city: { type: 'string' },
+                postalCode: { type: 'string' },
+                status: { type: 'string' },
+                createdAt: { type: 'string', format: 'date-time' },
+                updatedAt: { type: 'string', format: 'date-time' }
+              }
+            }
           }
         }
-      }
+      } as any
     },
-    async (request: FastifyRequest<{ Body: Omit<Company, 'id'> }>, reply) => {
-      const id = uuidv4();
-      const newCompany: Company = { id, ...request.body };
-      companies[id] = newCompany;
-      return reply.status(201).send(newCompany);
+    async (_request: FastifyRequest, _reply: FastifyReply) => {
+      return await companyService.findAll();
     }
   );
 
-  // Update an existing company
-  fastify.put(
+  // Get company by ID
+  fastify.get<{ Params: CompanyParams }>(
     '/:id',
     {
       schema: {
-        body: {
+        tags: ['companies'],
+        summary: 'Get company by ID',
+        description: 'Retrieve a specific company by their ID',
+        params: {
           type: 'object',
           properties: {
-            name: { type: 'string' },
-            address: { type: 'string' },
-            email: { type: 'string', format: 'email' },
-            phone: { type: 'string' }
-          }
+            id: { type: 'integer' }
+          },
+          required: ['id']
         }
-      }
+      } as any
     },
     async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: Partial<Omit<Company, 'id'>>;
-      }>,
-      reply
+      request: FastifyRequest<{ Params: CompanyParams }>,
+      reply: FastifyReply
     ) => {
-      const { id } = request.params;
-      const company = companies[id];
-      if (!company) {
-        return reply.status(404).send({ message: 'Company not found' });
+      const companyId = parseInt(request.params.id);
+
+      if (isNaN(companyId)) {
+        return reply.status(400).send({
+          error: {
+            message: 'Invalid company ID',
+            statusCode: 400
+          }
+        });
       }
-      const updated = { ...company, ...request.body };
-      companies[id] = updated;
-      return reply.status(200).send(updated);
+
+      const company = await companyService.findById(companyId);
+
+      if (!company) {
+        return reply.status(404).send({
+          error: {
+            message: 'Company not found',
+            statusCode: 404
+          }
+        });
+      }
+
+      return company;
     }
   );
 
-  // Delete a company
-  fastify.delete(
-    '/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
-      const { id } = request.params;
-      if (!companies[id]) {
-        return reply.status(404).send({ message: 'Company not found' });
+  // Create new company
+  fastify.post<{ Body: CreateCompanyBody }>(
+    '/',
+    {
+      schema: {
+        tags: ['companies'],
+        summary: 'Create new company',
+        description: 'Create a new company',
+        body: {
+          type: 'object',
+          required: ['name', 'email'],
+          properties: {
+            name: { type: 'string', minLength: 1 },
+            email: { type: 'string', format: 'email' },
+            description: { type: 'string' },
+            website: { type: 'string' },
+            phone: { type: 'string' },
+            address: { type: 'string' },
+            city: { type: 'string' },
+            country: { type: 'string' },
+            postalCode: { type: 'string' },
+            status: { type: 'string' },
+            employeeCount: { type: 'integer', minimum: 0 }
+          }
+        }
+      } as any
+    },
+    async (
+      request: FastifyRequest<{ Body: CreateCompanyBody }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const company = await companyService.create(request.body);
+        return reply.status(201).send(company);
+      } catch (error: any) {
+        return reply.status(400).send({
+          error: {
+            message: error.message || 'Failed to create company',
+            statusCode: 400
+          }
+        });
       }
-      delete companies[id];
+    }
+  );
+
+  // Update company
+  fastify.put<{ Params: CompanyParams; Body: Partial<CreateCompanyBody> }>(
+    '/:id',
+    {
+      schema: {
+        tags: ['companies'],
+        summary: 'Update company',
+        description: 'Update an existing company',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' }
+          },
+          required: ['id']
+        },
+        body: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', minLength: 1 },
+            email: { type: 'string', format: 'email' },
+            description: { type: 'string' },
+            website: { type: 'string' },
+            phone: { type: 'string' },
+            address: { type: 'string' },
+            city: { type: 'string' },
+            country: { type: 'string' },
+            postalCode: { type: 'string' },
+            status: { type: 'string' },
+            employeeCount: { type: 'integer', minimum: 0 }
+          }
+        }
+      } as any
+    },
+    async (
+      request: FastifyRequest<{
+        Params: CompanyParams;
+        Body: Partial<CreateCompanyBody>;
+      }>,
+      reply: FastifyReply
+    ) => {
+      const companyId = parseInt(request.params.id);
+
+      if (isNaN(companyId)) {
+        return reply.status(400).send({
+          error: {
+            message: 'Invalid company ID',
+            statusCode: 400
+          }
+        });
+      }
+
+      try {
+        // Check if email is being updated and if it conflicts
+        if (request.body.email) {
+          const existingCompany = await companyService.findByEmail(
+            request.body.email
+          );
+          if (existingCompany && existingCompany.id !== companyId) {
+            return reply.status(400).send({
+              error: {
+                message: 'Company with this email already exists',
+                statusCode: 400
+              }
+            });
+          }
+        }
+
+        const company = await companyService.update(companyId, request.body);
+
+        if (!company) {
+          return reply.status(404).send({
+            error: {
+              message: 'Company not found',
+              statusCode: 404
+            }
+          });
+        }
+
+        return company;
+      } catch (error: any) {
+        return reply.status(400).send({
+          error: {
+            message: error.message || 'Failed to update company',
+            statusCode: 400
+          }
+        });
+      }
+    }
+  );
+
+  // Delete company
+  fastify.delete<{ Params: CompanyParams }>(
+    '/:id',
+    {
+      schema: {
+        tags: ['companies'],
+        summary: 'Delete company',
+        description: 'Delete a company by ID',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' }
+          },
+          required: ['id']
+        },
+        response: {
+          204: {
+            type: 'null',
+            description: 'Company deleted successfully'
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                  statusCode: { type: 'integer' }
+                }
+              }
+            }
+          }
+        }
+      } as any
+    },
+    async (
+      request: FastifyRequest<{ Params: CompanyParams }>,
+      reply: FastifyReply
+    ) => {
+      const companyId = parseInt(request.params.id);
+
+      if (isNaN(companyId)) {
+        return reply.status(400).send({
+          error: {
+            message: 'Invalid company ID',
+            statusCode: 400
+          }
+        });
+      }
+
+      const deleted = await companyService.delete(companyId);
+
+      if (!deleted) {
+        return reply.status(404).send({
+          error: {
+            message: 'Company not found',
+            statusCode: 404
+          }
+        });
+      }
+
       return reply.status(204).send();
     }
   );

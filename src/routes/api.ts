@@ -5,6 +5,7 @@ import {
   FastifyReply
 } from 'fastify';
 import userRoutes from './users';
+import companyRoutes from './company';
 
 async function apiRoutes(
   fastify: FastifyInstance,
@@ -12,6 +13,7 @@ async function apiRoutes(
 ) {
   // Register sub-routes
   fastify.register(userRoutes, { prefix: '/users' });
+  fastify.register(companyRoutes, { prefix: '/companies' });
 
   // Root API endpoint
   fastify.get(
