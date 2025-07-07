@@ -9,6 +9,18 @@ import { UserService } from '../services/UserService';
 interface CreateUserBody {
   name: string;
   email: string;
+  password: string;
+}
+
+interface UpdateUserBody {
+  name?: string;
+  email?: string;
+  password?: string;
+}
+
+interface LoginBody {
+  email: string;
+  password: string;
 }
 
 interface UserParams {
@@ -36,10 +48,20 @@ async function userRoutes(
 
   const createUserSchema = {
     type: 'object',
-    required: ['name', 'email'],
+    required: ['name', 'email', 'password'],
     properties: {
       name: { type: 'string', minLength: 1 },
-      email: { type: 'string', format: 'email' }
+      email: { type: 'string', format: 'email' },
+      password: { type: 'string', minLength: 8 }
+    }
+  };
+
+  const updateUserSchema = {
+    type: 'object',
+    properties: {
+      name: { type: 'string', minLength: 1 },
+      email: { type: 'string', format: 'email' },
+      password: { type: 'string', minLength: 8 }
     }
   };
 
@@ -147,7 +169,7 @@ async function userRoutes(
       request: FastifyRequest<{ Body: CreateUserBody }>,
       reply: FastifyReply
     ) => {
-      const { name, email } = request.body;
+      const { name, email, password } = request.body;
 
       try {
         // Check if email already exists
@@ -162,7 +184,8 @@ async function userRoutes(
           return;
         }
 
-        const newUser = await userService.create({ name, email });
+        const newUser = await userService.create({ name, email, password });
+        reply.status(201).send(newUser);
         reply.status(201).send(newUser);
       } catch (error) {
         fastify.log.error(error);
@@ -191,7 +214,7 @@ async function userRoutes(
           },
           required: ['id']
         },
-        body: createUserSchema,
+        body: updateUserSchema,
         response: {
           200: userSchema,
           404: {
@@ -316,6 +339,79 @@ async function userRoutes(
           error: {
             message: 'Failed to delete user',
             statusCode: 400
+          }
+        });
+      }
+    }
+  );
+
+  // User login/authentication
+  fastify.post<{ Body: LoginBody }>(
+    '/login',
+    {
+      schema: {
+        tags: ['users'],
+        summary: 'User login',
+        description: 'Authenticate user with email and password',
+        body: {
+          type: 'object',
+          required: ['email', 'password'],
+          properties: {
+            email: { type: 'string', format: 'email' },
+            password: { type: 'string', minLength: 1 }
+          }
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              user: userSchema,
+              message: { type: 'string' }
+            }
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                  statusCode: { type: 'integer' }
+                }
+              }
+            }
+          }
+        }
+      } as any
+    },
+    async (
+      request: FastifyRequest<{ Body: LoginBody }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { email, password } = request.body;
+
+        const user = await userService.authenticateUser(email, password);
+        
+        if (!user) {
+          return reply.status(401).send({
+            error: {
+              message: 'Invalid email or password',
+              statusCode: 401
+            }
+          });
+        }
+
+        return reply.status(200).send({
+          user,
+          message: 'Login successful'
+        });
+      } catch (error: any) {
+        fastify.log.error(error);
+        return reply.status(500).send({
+          error: {
+            message: error.message || 'Login failed',
+            statusCode: 500
           }
         });
       }
