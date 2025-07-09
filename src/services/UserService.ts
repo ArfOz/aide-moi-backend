@@ -3,13 +3,13 @@ import { User } from '../entities/User';
 import { PasswordService } from './PasswordService';
 
 interface CreateUserData {
-  name: string;
+  username: string;
   email: string;
   password: string;
 }
 
 interface UpdateUserData {
-  name?: string;
+  username?: string;
   email?: string;
   password?: string;
 }
@@ -23,7 +23,7 @@ export class UserService {
 
   async findAll(): Promise<User[]> {
     return await this.userRepository.find({
-      select: ['id', 'name', 'email', 'createdAt', 'updatedAt'], // Exclude password
+      select: ['id', 'username', 'email', 'createdAt', 'updatedAt'], // Exclude password
       order: { id: 'ASC' }
     });
   }
@@ -31,14 +31,14 @@ export class UserService {
   async findById(id: number): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'email', 'createdAt', 'updatedAt'] // Exclude password
+      select: ['id', 'username', 'email', 'createdAt', 'updatedAt'] // Exclude password
     });
   }
 
   async findByEmail(email: string): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { email },
-      select: ['id', 'name', 'email', 'createdAt', 'updatedAt'] // Exclude password
+      select: ['id', 'username', 'email', 'createdAt', 'updatedAt'] // Exclude password
     });
   }
 
@@ -51,13 +51,17 @@ export class UserService {
 
   async create(userData: CreateUserData): Promise<User> {
     // Validate password strength
-    const passwordValidation = PasswordService.validatePasswordStrength(userData.password);
+    const passwordValidation = PasswordService.validatePasswordStrength(
+      userData.password
+    );
     if (!passwordValidation.isValid) {
       throw new Error(passwordValidation.message);
     }
 
     // Hash the password
-    const hashedPassword = await PasswordService.hashPassword(userData.password);
+    const hashedPassword = await PasswordService.hashPassword(
+      userData.password
+    );
 
     const user = this.userRepository.create({
       ...userData,
@@ -65,9 +69,9 @@ export class UserService {
     });
 
     const savedUser = await this.userRepository.save(user);
-    
+
     // Return user without password
-    return await this.findById(savedUser.id) as User;
+    return (await this.findById(savedUser.id)) as User;
   }
 
   async update(id: number, userData: UpdateUserData): Promise<User | null> {
@@ -75,11 +79,15 @@ export class UserService {
 
     // If password is being updated, hash it
     if (userData.password) {
-      const passwordValidation = PasswordService.validatePasswordStrength(userData.password);
+      const passwordValidation = PasswordService.validatePasswordStrength(
+        userData.password
+      );
       if (!passwordValidation.isValid) {
         throw new Error(passwordValidation.message);
       }
-      updateData.password = await PasswordService.hashPassword(userData.password);
+      updateData.password = await PasswordService.hashPassword(
+        userData.password
+      );
     }
 
     await this.userRepository.update(id, updateData);
@@ -95,7 +103,10 @@ export class UserService {
     return await this.userRepository.count();
   }
 
-  async authenticateUser(email: string, password: string): Promise<User | null> {
+  async authenticateUser(
+    email: string,
+    password: string
+  ): Promise<User | null> {
     // Find user with password included
     const user = await this.findByEmailWithPassword(email);
     if (!user || !user.password) {
@@ -103,7 +114,10 @@ export class UserService {
     }
 
     // Compare password
-    const isPasswordValid = await PasswordService.comparePassword(password, user.password);
+    const isPasswordValid = await PasswordService.comparePassword(
+      password,
+      user.password
+    );
     if (!isPasswordValid) {
       return null;
     }

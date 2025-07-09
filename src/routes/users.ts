@@ -7,13 +7,13 @@ import {
 import { UserService } from '../services/UserService';
 
 interface CreateUserBody {
-  name: string;
+  username: string;
   email: string;
   password: string;
 }
 
 interface UpdateUserBody {
-  name?: string;
+  username?: string;
   email?: string;
   password?: string;
 }
@@ -39,7 +39,7 @@ async function userRoutes(
     type: 'object',
     properties: {
       id: { type: 'integer' },
-      name: { type: 'string' },
+      username: { type: 'string' },
       email: { type: 'string', format: 'email' },
       createdAt: { type: 'string', format: 'date-time' },
       updatedAt: { type: 'string', format: 'date-time' }
@@ -48,9 +48,9 @@ async function userRoutes(
 
   const createUserSchema = {
     type: 'object',
-    required: ['name', 'email', 'password'],
+    required: ['username', 'email', 'password'],
     properties: {
-      name: { type: 'string', minLength: 1 },
+      username: { type: 'string', minLength: 1 },
       email: { type: 'string', format: 'email' },
       password: { type: 'string', minLength: 8 }
     }
@@ -59,7 +59,7 @@ async function userRoutes(
   const updateUserSchema = {
     type: 'object',
     properties: {
-      name: { type: 'string', minLength: 1 },
+      username: { type: 'string', minLength: 1 },
       email: { type: 'string', format: 'email' },
       password: { type: 'string', minLength: 8 }
     }
@@ -169,7 +169,7 @@ async function userRoutes(
       request: FastifyRequest<{ Body: CreateUserBody }>,
       reply: FastifyReply
     ) => {
-      const { name, email, password } = request.body;
+      const { username, email, password } = request.body;
 
       try {
         // Check if email already exists
@@ -184,8 +184,7 @@ async function userRoutes(
           return;
         }
 
-        const newUser = await userService.create({ name, email, password });
-        reply.status(201).send(newUser);
+        const newUser = await userService.create({ username, email, password });
         reply.status(201).send(newUser);
       } catch (error) {
         fastify.log.error(error);
@@ -237,7 +236,7 @@ async function userRoutes(
       reply: FastifyReply
     ) => {
       const { id } = request.params;
-      const { name, email } = request.body;
+      const { username, email } = request.body;
 
       try {
         // Check if user exists
@@ -265,7 +264,7 @@ async function userRoutes(
         }
 
         const updatedUser = await userService.update(parseInt(id), {
-          name,
+          username,
           email
         });
         return updatedUser;
@@ -392,7 +391,7 @@ async function userRoutes(
         const { email, password } = request.body;
 
         const user = await userService.authenticateUser(email, password);
-        
+
         if (!user) {
           return reply.status(401).send({
             error: {

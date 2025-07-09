@@ -7,12 +7,15 @@ const { TableColumn } = require('typeorm');
 class AddPasswordToUsers1720000000001 {
   async up(queryRunner) {
     // Add password column to users table
-    await queryRunner.addColumn('users', new TableColumn({
-      name: 'password',
-      type: 'varchar',
-      length: '255',
-      isNullable: true
-    }));
+    await queryRunner.addColumn(
+      'users',
+      new TableColumn({
+        name: 'password',
+        type: 'varchar',
+        length: '255',
+        isNullable: true
+      })
+    );
   }
 
   async down(queryRunner) {
