@@ -12,7 +12,7 @@ async function swaggerPlugin(
         description: 'API documentation for Aide Moi Backend',
         version: '1.0.0'
       },
-      host: 'localhost:3000',
+      host: 'localhost:3300',
       schemes: ['http'],
       consumes: ['application/json'],
       produces: ['application/json'],

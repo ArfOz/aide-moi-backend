@@ -365,7 +365,8 @@ async function userRoutes(
             type: 'object',
             properties: {
               user: userSchema,
-              message: { type: 'string' }
+              message: { type: 'string' },
+              token: { type: 'string' }
             }
           },
           401: {

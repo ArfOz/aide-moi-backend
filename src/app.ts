@@ -8,6 +8,7 @@ import healthRoutes from './routes/health';
 import apiRoutes from './routes/api';
 import userRoutes from './routes/users';
 import companyRoutes from './routes/company';
+import authRoutes from './routes/auth';
 
 /**
  * Create and configure Fastify instance
@@ -40,6 +41,7 @@ function build(opts: FastifyServerOptions = {}): FastifyInstance {
   // Register routes
   app.register(healthRoutes, { prefix: '/health' });
   app.register(apiRoutes, { prefix: '/api/v1' });
+  app.register(authRoutes, { prefix: '/api/auth' });
   app.register(userRoutes, { prefix: '/api/user' });
   app.register(companyRoutes, { prefix: '/api/company' });
 
