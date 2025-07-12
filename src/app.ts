@@ -41,9 +41,9 @@ function build(opts: FastifyServerOptions = {}): FastifyInstance {
   // Register routes
   app.register(healthRoutes, { prefix: '/health' });
   app.register(apiRoutes, { prefix: '/api/v1' });
-  app.register(authRoutes, { prefix: '/api/auth' });
-  app.register(userRoutes, { prefix: '/api/user' });
-  app.register(companyRoutes, { prefix: '/api/company' });
+  // app.register(authRoutes, { prefix: '/api/auth' });
+  // app.register(userRoutes, { prefix: '/api/user' });
+  // app.register(companyRoutes, { prefix: '/api/company' });
 
   // Global error handler
   app.setErrorHandler(async (error, request, reply) => {
