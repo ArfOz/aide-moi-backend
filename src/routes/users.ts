@@ -75,14 +75,24 @@ async function userRoutes(
         description: 'Retrieve a list of all users',
         response: {
           200: {
-            type: 'array',
-            items: userSchema
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'array',
+                items: userSchema
+              }
+            }
           }
         }
       } as any
     },
     async (_request: FastifyRequest, _reply: FastifyReply) => {
-      return await userService.findAll();
+      const users = await userService.findAll();
+      return {
+        success: true,
+        data: users
+      };
     }
   );
 
@@ -102,10 +112,17 @@ async function userRoutes(
           required: ['id']
         },
         response: {
-          200: userSchema,
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: userSchema
+            }
+          },
           404: {
             type: 'object',
             properties: {
+              success: { type: 'boolean' },
               error: {
                 type: 'object',
                 properties: {
@@ -126,16 +143,19 @@ async function userRoutes(
       const user = await userService.findById(parseInt(id));
 
       if (!user) {
-        reply.status(404).send({
+        return reply.status(404).send({
+          success: false,
           error: {
             message: 'User not found',
             statusCode: 404
           }
         });
-        return;
       }
 
-      return user;
+      return {
+        success: true,
+        data: user
+      };
     }
   );
 
@@ -146,13 +166,41 @@ async function userRoutes(
       schema: {
         tags: ['users'],
         summary: 'Create a new user',
-        description: 'Create a new user with name and email',
+        description: 'Create a new user with username, email and password',
         body: createUserSchema,
         response: {
-          201: userSchema,
+          201: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+              user: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  username: { type: 'string' },
+                  email: { type: 'string', format: 'email' }
+                }
+              }
+            }
+          },
           400: {
             type: 'object',
             properties: {
+              success: { type: 'boolean' },
+              error: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                  statusCode: { type: 'integer' }
+                }
+              }
+            }
+          },
+          409: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
               error: {
                 type: 'object',
                 properties: {
@@ -175,23 +223,34 @@ async function userRoutes(
         // Check if email already exists
         const existingUser = await userService.findByEmail(email);
         if (existingUser) {
-          reply.status(400).send({
+          return reply.status(409).send({
+            success: false,
             error: {
               message: 'User with this email already exists',
-              statusCode: 400
+              statusCode: 409
             }
           });
-          return;
         }
 
         const newUser = await userService.create({ username, email, password });
-        reply.status(201).send(newUser);
+
+        return reply.status(201).send({
+          success: true,
+          message:
+            'Account created. Please check your email to verify your account.',
+          user: {
+            id: newUser.id.toString(),
+            username: newUser.username,
+            email: newUser.email
+          }
+        });
       } catch (error) {
         fastify.log.error(error);
-        reply.status(400).send({
+        return reply.status(500).send({
+          success: false,
           error: {
             message: 'Failed to create user',
-            statusCode: 400
+            statusCode: 500
           }
         });
       }
@@ -215,10 +274,31 @@ async function userRoutes(
         },
         body: updateUserSchema,
         response: {
-          200: userSchema,
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+              data: userSchema
+            }
+          },
           404: {
             type: 'object',
             properties: {
+              success: { type: 'boolean' },
+              error: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                  statusCode: { type: 'integer' }
+                }
+              }
+            }
+          },
+          400: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
               error: {
                 type: 'object',
                 properties: {
@@ -242,38 +322,44 @@ async function userRoutes(
         // Check if user exists
         const existingUser = await userService.findById(parseInt(id));
         if (!existingUser) {
-          reply.status(404).send({
+          return reply.status(404).send({
+            success: false,
             error: {
               message: 'User not found',
               statusCode: 404
             }
           });
-          return;
         }
 
         // Check if email already exists (excluding current user)
         const emailUser = await userService.findByEmail(email);
         if (emailUser && emailUser.id !== parseInt(id)) {
-          reply.status(400).send({
+          return reply.status(400).send({
+            success: false,
             error: {
               message: 'User with this email already exists',
               statusCode: 400
             }
           });
-          return;
         }
 
         const updatedUser = await userService.update(parseInt(id), {
           username,
           email
         });
-        return updatedUser;
+
+        return {
+          success: true,
+          message: 'User updated successfully',
+          data: updatedUser
+        };
       } catch (error) {
         fastify.log.error(error);
-        reply.status(400).send({
+        return reply.status(500).send({
+          success: false,
           error: {
             message: 'Failed to update user',
-            statusCode: 400
+            statusCode: 500
           }
         });
       }
@@ -296,10 +382,17 @@ async function userRoutes(
           required: ['id']
         },
         response: {
-          204: {},
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' }
+            }
+          },
           404: {
             type: 'object',
             properties: {
+              success: { type: 'boolean' },
               error: {
                 type: 'object',
                 properties: {
@@ -322,22 +415,26 @@ async function userRoutes(
         const deleted = await userService.delete(parseInt(id));
 
         if (!deleted) {
-          reply.status(404).send({
+          return reply.status(404).send({
+            success: false,
             error: {
               message: 'User not found',
               statusCode: 404
             }
           });
-          return;
         }
 
-        reply.status(204).send();
+        return reply.status(200).send({
+          success: true,
+          message: 'User deleted successfully'
+        });
       } catch (error) {
         fastify.log.error(error);
-        reply.status(400).send({
+        return reply.status(500).send({
+          success: false,
           error: {
             message: 'Failed to delete user',
-            statusCode: 400
+            statusCode: 500
           }
         });
       }
@@ -364,6 +461,7 @@ async function userRoutes(
           200: {
             type: 'object',
             properties: {
+              success: { type: 'boolean' },
               user: userSchema,
               message: { type: 'string' },
               token: { type: 'string' }
@@ -372,6 +470,7 @@ async function userRoutes(
           401: {
             type: 'object',
             properties: {
+              success: { type: 'boolean' },
               error: {
                 type: 'object',
                 properties: {
@@ -395,6 +494,7 @@ async function userRoutes(
 
         if (!user) {
           return reply.status(401).send({
+            success: false,
             error: {
               message: 'Invalid email or password',
               statusCode: 401
@@ -403,12 +503,14 @@ async function userRoutes(
         }
 
         return reply.status(200).send({
+          success: true,
           user,
           message: 'Login successful'
         });
       } catch (error: any) {
         fastify.log.error(error);
         return reply.status(500).send({
+          success: false,
           error: {
             message: error.message || 'Login failed',
             statusCode: 500
