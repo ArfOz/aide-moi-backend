@@ -1,6 +1,8 @@
-# Aide Moi Backend
+# Aide Moi Backend Template
 
-A modern Node.js backend API built with Fastify framework and TypeORM with PostgreSQL database.
+A modern Node.js backend API template built with Fastify framework and TypeORM with PostgreSQL database.
+
+> **Note**: This is a reference template repository. The actual backend will be created as part of a frontend project using NX monorepo architecture for better type safety and code sharing.
 
 ## Features
 
@@ -15,8 +17,53 @@ A modern Node.js backend API built with Fastify framework and TypeORM with Postg
 - 📊 **Health Checks**: Built-in health monitoring endpoints
 - 🎯 **Environment Config**: Dotenv for environment management
 - 🔄 **Database Migrations**: TypeORM migration support
+- 🔗 **Monorepo Ready**: Template designed for integration with frontend projects
+- 🎯 **Type Safety**: Shared TypeScript types for full-stack type safety
 
-## Quick Start
+## Architecture Philosophy
+
+This template demonstrates backend API patterns that will be integrated into a frontend project using **NX monorepo** or similar monorepo architecture. The actual implementation will provide:
+
+- **Shared Types**: Common TypeScript interfaces and types shared between frontend and backend
+- **Type Safety**: End-to-end type checking from API to UI
+- **Code Reuse**: Shared utilities, validators, and constants
+- **Consistent Development**: Unified tooling and configuration across the stack
+- **Single Repository**: Easier version control and deployment
+
+## Recommended Integration Structure
+
+When integrating this backend into your frontend project:
+
+```
+your-frontend-project/
+├── apps/
+│   ├── frontend/          # Your existing frontend app
+│   └── backend/           # New backend app (based on this template)
+├── libs/
+│   └── shared/
+│       ├── types/         # Shared TypeScript interfaces
+│       ├── utils/         # Shared utilities
+│       └── constants/     # Shared constants
+├── tools/
+├── workspace.json
+└── package.json
+```
+
+## Template Usage
+
+### For Reference and Learning
+This repository serves as a reference for:
+- API design patterns
+- Fastify configuration
+- TypeORM setup
+- Authentication implementation
+- Error handling patterns
+- Testing strategies
+
+### For New Backend Creation
+Use this template as a foundation when creating your backend within your frontend project structure.
+
+## Quick Start (For Template Testing)
 
 ### Prerequisites
 
@@ -109,6 +156,9 @@ npm run db:stop
 | `DB_SQLITE_PATH` | SQLite file path | ./database.sqlite |
 | `DB_SYNCHRONIZE` | Auto-sync database schema | true |
 | `DB_LOGGING` | Enable query logging | true |
+| `JWT_SECRET` | JWT secret key | your-secret-key |
+| `JWT_EXPIRES_IN` | JWT expiration time | 24h |
+| `REFRESH_TOKEN_EXPIRES_IN` | Refresh token expiration | 7d |
 
 ## API Documentation
 
@@ -117,7 +167,7 @@ Once the server is running, visit:
 - Health Check: `http://localhost:3000/health`
 - API Root: `http://localhost:3000/api/v1`
 
-## Project Structure
+## Template Structure
 
 ```
 src/
@@ -128,7 +178,11 @@ src/
 ├── entities/           # TypeORM entities
 │   └── User.js         # User entity definition
 ├── services/           # Business logic services
-│   └── UserService.js  # User service with database operations
+│   ├── UserService.js  # User service with database operations
+│   ├── JwtService.js   # JWT token management
+│   └── PasswordService.js # Password hashing utilities
+├── middleware/         # Custom middleware
+│   └── auth.js         # Authentication middleware
 ├── plugins/            # Fastify plugins
 │   ├── cors.js
 │   ├── database.js     # Database connection plugin
@@ -138,6 +192,7 @@ src/
 └── routes/             # Route handlers
     ├── api.js
     ├── health.js
+    ├── auth.js         # Authentication routes
     └── users.js        # User CRUD operations with TypeORM
 tests/                  # Test files
 ├── health.test.js
@@ -145,11 +200,18 @@ tests/                  # Test files
 ormconfig.js           # TypeORM CLI configuration
 ```
 
-## API Endpoints
+## API Endpoints Reference
 
 ### Health Checks
 - `GET /health` - Basic health check
 - `GET /health/detailed` - Detailed health information
+
+### Authentication API
+- `POST /api/auth/register` - User registration with JWT tokens
+- `POST /api/auth/login` - User login with JWT tokens
+- `POST /api/auth/refresh` - Refresh access token
+- `GET /api/auth/profile` - Get current user profile (protected)
+- `POST /api/auth/logout` - User logout
 
 ### Users API (with TypeORM)
 - `GET /api/v1/users` - Get all users
@@ -158,7 +220,36 @@ ormconfig.js           # TypeORM CLI configuration
 - `PUT /api/v1/users/:id` - Update user
 - `DELETE /api/v1/users/:id` - Delete user
 
-All user operations are persisted to the database using TypeORM.
+All API responses follow a consistent format with `success` field for better frontend integration.
+
+## Shared Types Example
+
+When integrating with your frontend project, you can create shared types like:
+
+```typescript
+// libs/shared/types/auth.ts
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  tokens: {
+    token: string;
+    refreshToken: string;
+    expiresIn: string;
+    expiresAt: string;
+  };
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    roles: string[];
+  };
+}
+```
 
 ## Database Management
 
@@ -199,13 +290,25 @@ For production with PostgreSQL:
 docker-compose up
 ```
 
+## Integration Guidelines
+
+When creating your backend within your frontend project:
+
+1. **Copy relevant files** from this template
+2. **Adapt file paths** to your project structure
+3. **Update package.json** with shared dependencies
+4. **Create shared types** in a common library
+5. **Configure build scripts** for monorepo structure
+6. **Set up development workflow** with concurrent frontend/backend development
+
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+This template is designed to be a reference and starting point. When you create your actual backend implementation:
+
+1. Fork or reference this template
+2. Adapt the code to your specific needs
+3. Integrate with your frontend project structure
+4. Share improvements back to this template if applicable
 
 ## License
 
