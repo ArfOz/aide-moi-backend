@@ -53,22 +53,28 @@ async function authRoutes(
           200: {
             type: 'object',
             properties: {
-              user: {
-                type: 'object',
-                properties: {
-                  id: { type: 'integer' },
-                  username: { type: 'string' },
-                  email: { type: 'string' },
-                  createdAt: { type: 'string' },
-                  updatedAt: { type: 'string' }
-                }
-              },
+              message: { type: 'string' },
               tokens: {
                 type: 'object',
                 properties: {
-                  accessToken: { type: 'string' },
+                  token: { type: 'string' },
                   refreshToken: { type: 'string' },
-                  expiresIn: { type: 'string' }
+                  expiresIn: { type: 'string' },
+                  expiresAt: { type: 'string', format: 'date-time' },
+                  refreshExpiresIn: { type: 'string' },
+                  refreshExpiresAt: { type: 'string', format: 'date-time' }
+                }
+              },
+              user: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  username: { type: 'string' },
+                  email: { type: 'string' },
+                  roles: {
+                    type: 'array',
+                    items: { type: 'string' }
+                  }
                 }
               }
             }
@@ -116,18 +122,38 @@ async function authRoutes(
         const { accessToken, refreshToken } =
           JwtService.generateTokenPair(tokenPayload);
 
+        // Calculate expiration times
+        const accessTokenExpiresIn = process.env.JWT_EXPIRES_IN || '24h';
+        const refreshTokenExpiresIn =
+          process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
+
+        // Calculate exact expiration dates
+        const now = new Date();
+        const accessTokenExpiresAt = new Date(
+          now.getTime() + parseExpirationTime(accessTokenExpiresIn)
+        );
+        const refreshTokenExpiresAt = new Date(
+          now.getTime() + parseExpirationTime(refreshTokenExpiresIn)
+        );
+
+        // Log successful login
+        fastify.log.info(`User logged in: ${user.username}`);
+
         return reply.status(200).send({
+          message: 'Login successful',
+          tokens: {
+            token: accessToken,
+            refreshToken: refreshToken,
+            expiresIn: accessTokenExpiresIn,
+            expiresAt: accessTokenExpiresAt.toISOString(),
+            refreshExpiresIn: refreshTokenExpiresIn,
+            refreshExpiresAt: refreshTokenExpiresAt.toISOString()
+          },
           user: {
-            id: user.id,
+            id: user.id.toString(),
             username: user.username,
             email: user.email,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt
-          },
-          tokens: {
-            accessToken,
-            refreshToken,
-            expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+            roles: ['user'] // Default role, you can expand this based on your user model
           }
         });
       } catch (error) {
@@ -319,6 +345,25 @@ async function authRoutes(
       });
     }
   );
+}
+
+// Helper function to parse expiration time strings
+function parseExpirationTime(expiresIn: string): number {
+  const timeUnit = expiresIn.slice(-1);
+  const timeValue = parseInt(expiresIn.slice(0, -1));
+
+  switch (timeUnit) {
+    case 's':
+      return timeValue * 1000; // seconds
+    case 'm':
+      return timeValue * 60 * 1000; // minutes
+    case 'h':
+      return timeValue * 60 * 60 * 1000; // hours
+    case 'd':
+      return timeValue * 24 * 60 * 60 * 1000; // days
+    default:
+      return 24 * 60 * 60 * 1000; // default to 24 hours
+  }
 }
 
 export default authRoutes;
